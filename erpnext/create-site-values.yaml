@@ -1,0 +1,5 @@
+jobs:
+  createSite:
+    enabled: true
+    siteName: "erp.localtest.me"
+    adminPassword: "myPass47#"

@@ -1,0 +1,89 @@
+ 2075  rm ~/.kube/config
+ 2076  kubectl get nodes
+ 2077  oci ce cluster create-kubeconfig --cluster-id ocid1.cluster.oc1.me-dubai-1.aaaaaaaavwctegy4otpjmvldawqt7ymzsqwvkc47gdsv3qdkacvh5q7oxo5a --file $HOME/.kube/config --region me-dubai-1 --token-version 2.0.0  --kube-endpoint PUBLIC_ENDPOINT
+ 2078  kubectl get nodes
+ 2079  kubectl create -f https://k8s.io/examples/application/deployment.yaml
+ 2080  kubectl get nodes
+ 2081  kubectl get deployments
+ 2082  kubectl run test-internet --image=docker.io/busybox:latest --rm -it --restart=Never -- sh
+ 2083  kubectl get deployment
+ 2084  kubectl get pods
+ 2085  kubectl describe deployment nginx-deployment
+ 2086  kubectl get pods
+ 2087  kubectl describe deployment nginx-deployment
+ 2088  kubectl get pods
+ 2089  kubectl describe pods nginx-deployment-bf744486c-kb7dm
+ 2090  kubectl set image deployment/nginx-deployment nginx=docker.io/nginx:1.14.2
+ 2091  kubectl get pods
+ 2092  code .
+ 2093  kubectl expose deployment nginx-deployment --type=LoadBalancer --port=80
+ 2094  kubectl get service nginx-deployment
+ 2095  helm upgrade --install ingress-nginx ingress-nginx   --repo https://kubernetes.github.io/ingress-nginx   --namespace ingress-nginx --create-namespace
+ 2096  kubectl get service --namespace ingress-nginx ingress-nginx-controller
+ 2097  echo "Please add A record and test the browser -in firefox "
+ 2098  cat > nginx-test-initialconntectivyt.yaml << 'EOF'
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: tmg.quickzpro.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deployment
+            port:
+              number: 80
+EOF
+
+ 2099  kubectl apply -f nginx-test-initialconntectivyt.yaml
+ 2100  echo "cert manager installation"
+ 2101  helm repo update
+ 2102  helm install   cert-manager oci://quay.io/jetstack/charts/cert-manager   --version v1.19.1   --namespace cert-manager   --create-namespace   --set crds.enabled=true
+ 2103  kubectl apply -f erpnext/oke-letsencrypt-issuer.yaml
+ 2104  kubectl get clusterissuer letsencrypt-prod
+ 2105  cat > nginx-test-initialconntectivyt.yaml << 'EOF'
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  namespace: default
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - tmg.quickzpro.com
+    secretName: tmg-quickzpro-tls
+  rules:
+  - host: tmg.quickzpro.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deployment
+            port:
+              number: 80
+EOF
+
+ 2106  kubectl apply -f nginx-test-initialconntectivyt.yaml
+ 2107  kubectl get certificate
+ 2108  kubectl describe certificate tmg-quickzpro-tls
+ 2109  kubectl get certificate
+ 2110  echo "try hitting the website"
+ 2111  echo "Starting erpnext installation"
+ 2112  kubectl create namespace nfs
+ 2113  helm repo add nfs-ganesha-server-and-external-provisioner https://kubernetes-sigs.github.io/nfs-ganesha-server-and-external-provisioner
+ 2114  helm upgrade --install -n nfs in-cluster nfs-ganesha-server-and-external-provisioner/nfs-server-provisioner --set 'storageClass.mountOptions={vers=4.1}' --set persistence.enabled=true --set persistence.size=8Gi
+ 2115  kubectl get pods -n nfs -w
+ 2116  kubectl get pods -n nfs 
+ 2117  kubectl create namespace db

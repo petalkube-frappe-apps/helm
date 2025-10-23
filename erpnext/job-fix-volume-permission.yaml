@@ -1,0 +1,47 @@
+---
+# Source: erpnext/templates/job-fix-volume-permission.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: frappe-bench-erpnext-vol-fix-20251004175245
+  labels:
+    helm.sh/chart: erpnext-7.0.239
+    app.kubernetes.io/name: erpnext
+    app.kubernetes.io/instance: frappe-bench
+    app.kubernetes.io/version: "v15.81.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccountName: frappe-bench-erpnext
+      securityContext:
+        supplementalGroups:
+        - 1000
+      containers:
+      - name: frappe-bench-ownership
+        image: frappe/erpnext:v15.81.1
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c']
+        args:
+          - |
+            chown -R 1000:1000 /home/frappe/frappe-bench
+        resources:
+          {}
+        securityContext:
+          # run as root to set ownership
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+          - name: sites-dir
+            mountPath: /home/frappe/frappe-bench/sites
+          - name: logs
+            mountPath: /home/frappe/frappe-bench/logs
+      restartPolicy: Never
+      volumes:
+        - name: sites-dir
+          persistentVolumeClaim:
+            claimName: frappe-bench-erpnext
+            readOnly: false
+        - name: logs
+          emptyDir: {}

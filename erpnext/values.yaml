@@ -423,6 +423,14 @@ redis-queue:
     persistence:
       enabled: false
 
+externalDatabase:
+  enabled: true
+  host: mariadb-galera.db.svc.cluster.local
+  port: 3306
+  user: erpnext
+  password: "CHANGE-APP-PASS"
+  database: erpnext      
+
 mariadb:
   # https://github.com/bitnami/charts/tree/master/bitnami/mariadb
   enabled: true

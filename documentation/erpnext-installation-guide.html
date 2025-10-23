@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERPNext Installation on OKE - Complete Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .important-note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .important-note h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .section {
+            background-color: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #333;
+            border-bottom: 3px solid #f5576c;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .section h3 {
+            color: #555;
+            margin-top: 25px;
+        }
+        pre {
+            background-color: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+            border: 1px solid #37474f;
+        }
+        code {
+            background-color: #263238;
+            color: #aed581;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        .warning {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #155724;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #0c5460;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .command-description {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+        .footer {
+            margin-top: 50px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            text-align: center;
+            color: #666;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f093fb;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ERPNext Installation on OKE</h1>
+        <p><strong>Complete Installation Guide with Custom Docker Images</strong></p>
+        <p>Date: October 23, 2025 | Cluster: cluster1 | Domain: tmg.quickzpro.com</p>
+    </div>
+
+    <div class="important-note">
+        <h3>⚠️ Important: Custom Docker Image Build Required</h3>
+        <p><strong>ERPNext images MUST be built from source using Docker for ARM64 architecture.</strong></p>
+        <p>The standard ERPNext images from Docker Hub do not support ARM64 (Oracle Cloud Free Tier A1.Flex instances). You must build custom images using Docker Buildx with multi-architecture support before proceeding with the Helm installation.</p>
+        <p><strong>Key Requirements:</strong></p>
+        <ul>
+            <li>Docker with Buildx extension enabled</li>
+            <li>QEMU emulators for cross-platform builds</li>
+            <li>Docker Hub account for pushing custom images</li>
+            <li>ARM64-compatible base images</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Prerequisites</h2>
+        <ul>
+            <li>✅ Kubernetes cluster running (Milestone 1 completed)</li>
+            <li>✅ kubectl configured and working</li>
+            <li>✅ Helm 3 installed</li>
+            <li>✅ Docker installed with Buildx support</li>
+            <li>✅ Docker Hub account (or alternative container registry)</li>
+            <li>✅ ERPNext source code cloned locally</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Cleanup Commands</h2>
+        <p class="command-description">Use these commands if you need to start fresh or remove a previous ERPNext installation:</p>
+
+        <h3>Option 1: Delete Everything in erpnext Namespace</h3>
+        <pre><code># Delete all resources (pods, services, deployments, etc.)
+kubectl delete all --all -n erpnext
+
+# Delete Persistent Volume Claims
+kubectl delete pvc --all -n erpnext
+
+# Delete ConfigMaps and Secrets
+kubectl delete configmap --all -n erpnext
+kubectl delete secret --all -n erpnext</code></pre>
+
+        <h3>Option 2: Delete Entire Namespace (Complete Cleanup)</h3>
+        <pre><code># This removes everything including the namespace itself
+kubectl delete namespace erpnext</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> Deleting PVCs will permanently delete all data stored in persistent volumes. Make sure you have backups before running cleanup commands.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Pre-Step 0: Setup Docker Buildx</h2>
+        <p class="command-description">Docker Buildx is required for building multi-architecture images. This setup ensures you can build ARM64 images on any platform.</p>
+
+        <h3>Install QEMU Emulators</h3>
+        <p>QEMU allows your system to emulate different CPU architectures:</p>
+        <pre><code># Install QEMU emulators for multi-arch builds
+docker run --rm --privileged multiarch/qemu-user-static --reset -p yes</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Info:</strong> This command sets up QEMU user-mode emulation, allowing Docker to build images for architectures different from your host machine (e.g., building ARM64 images on x86_64).
+        </div>
+
+        <h3>Verify Docker Buildx</h3>
+        <pre><code># Check if Docker buildx is properly configured
+docker buildx ls</code></pre>
+
+        <p><strong>Expected output should show:</strong></p>
+        <pre><code>NAME/NODE       DRIVER/ENDPOINT             STATUS  BUILDKIT PLATFORMS
+default *       docker                              
+  default       default                     running v0.xx.x  linux/amd64, linux/arm64, ...</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>Step 0: Build Custom Docker Image for ARM64</h2>
+        <p class="command-description">This is the most critical step. You must build ERPNext images specifically for ARM64 architecture.</p>
+
+        <h3>Step 0.1: Clean Up Existing Builders</h3>
+        <pre><code># Remove any existing builders that might conflict
+docker buildx rm multiarch 2>/dev/null || true
+docker buildx rm arm64-builder 2>/dev/null || true</code></pre>
+
+        <h3>Step 0.2: Create New Buildx Builder</h3>
+        <pre><code># Create a new builder with docker-container driver
+docker buildx create --name arm64-builder --driver docker-container --bootstrap --use</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Why docker-container driver?</strong>
+            <p>The docker-container driver runs the build in an isolated container, providing better support for multi-platform builds and advanced features compared to the default docker driver.</p>
+        </div>
+
+        <h3>Step 0.3: Verify Active Builder</h3>
+        <pre><code># Confirm the new builder is active and ready
+docker buildx ls</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>NAME/NODE         DRIVER/ENDPOINT             STATUS   BUILDKIT PLATFORMS
+arm64-builder *   docker-container                              
+  arm64-builder0  unix:///var/run/docker.sock running  v0.xx.x  linux/amd64, linux/arm64, ...</code></pre>
+
+        <h3>Step 0.4: Build and Push ARM64 Image</h3>
+        <pre><code># Build for ARM64 architecture and push to Docker Hub
+docker buildx build \
+  --platform linux/arm64 \
+  --build-arg FRAPPE_PATH=https://github.com/petalkube-frappe-apps/frappe \
+  --build-arg FRAPPE_BRANCH=develop \
+  --build-arg PYTHON_VERSION=3.11.6 \
+  --build-arg NODE_VERSION=20.19.2 \
+  --build-arg APPS_JSON_BASE64=$APPS_JSON_BASE64 \
+  --tag harrismajeed/erpnext-custom:develop \
+  --file images/production/Containerfile \
+  --push \
+  --no-cache \
+  .</code></pre>
+
+        <div class="success">
+            <strong>✅ Build Arguments Explained:</strong>
+            <ul>
+                <li><code>--platform linux/arm64</code> - Target ARM64 architecture for Oracle A1.Flex</li>
+                <li><code>--build-arg FRAPPE_PATH</code> - URL to Frappe framework repository</li>
+                <li><code>--build-arg FRAPPE_BRANCH</code> - Branch to build from (develop/version-14/etc.)</li>
+                <li><code>--build-arg PYTHON_VERSION</code> - Python version for ERPNext</li>
+                <li><code>--build-arg NODE_VERSION</code> - Node.js version for frontend assets</li>
+                <li><code>--build-arg APPS_JSON_BASE64</code> - Base64 encoded list of apps to install</li>
+                <li><code>--tag</code> - Image name and tag for your registry</li>
+                <li><code>--file</code> - Path to Containerfile/Dockerfile</li>
+                <li><code>--push</code> - Automatically push to registry after build</li>
+                <li><code>--no-cache</code> - Force fresh build without using cached layers</li>
+            </ul>
+        </div>
+
+        <h3>Step 0.5: Verify Image Architecture</h3>
+        <pre><code># Confirm the built image is ARM64
+docker buildx imagetools inspect harrismajeed/erpnext-custom:develop | grep -i platform</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>Platform: linux/arm64</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ OLD METHOD (DOES NOT WORK):</strong>
+            <p>For reference, this is the old method that DOES NOT work for ARM64 builds:</p>
+            <pre><code># ❌ DON'T USE THIS - Regular docker build doesn't support ARM64 properly
+docker build \
+  --platform linux/arm64 \
+  --build-arg=FRAPPE_PATH=https://github.com/petalkube-frappe-apps/frappe \
+  --build-arg=FRAPPE_BRANCH=develop \
+  --build-arg=PYTHON_VERSION=3.11.6 \
+  --build-arg=NODE_VERSION=20.19.2 \
+  --build-arg=APPS_JSON_BASE64=$APPS_JSON_BASE64 \
+  --tag=harrismajeed/erpnext-custom:develop \
+  --file=images/production/Containerfile \
+  .
+
+docker push harrismajeed/erpnext-custom:develop</code></pre>
+            <p><strong>Why it doesn't work:</strong> The regular <code>docker build</code> command doesn't properly handle cross-platform builds. It may appear to work but will fail when deployed to ARM64 nodes with "exec format error".</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Understanding APPS_JSON_BASE64</h2>
+        <p>The <code>APPS_JSON_BASE64</code> build argument specifies which Frappe applications to install in your ERPNext image.</p>
+
+        <h3>Creating APPS_JSON_BASE64</h3>
+        
+        <h4>Step 1: Create apps.json file</h4>
+        <pre><code>[
+  {
+    "url": "https://github.com/frappe/erpnext",
+    "branch": "develop"
+  },
+  {
+    "url": "https://github.com/frappe/hrms",
+    "branch": "develop"
+  }
+]</code></pre>
+
+        <h4>Step 2: Encode to Base64</h4>
+        <pre><code># On Linux/Mac
+export APPS_JSON_BASE64=$(cat apps.json | base64 -w 0)
+
+# On Mac specifically
+export APPS_JSON_BASE64=$(cat apps.json | base64)
+
+# Verify the encoding
+echo $APPS_JSON_BASE64</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Common Apps for ERPNext:</strong>
+            <ul>
+                <li><strong>erpnext</strong> - Core ERP functionality (required)</li>
+                <li><strong>hrms</strong> - Human Resources Management</li>
+                <li><strong>payments</strong> - Payment gateway integrations</li>
+                <li><strong>wiki</strong> - Internal wiki/documentation</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Build Time Expectations</h2>
+        <table>
+            <tr>
+                <th>Build Type</th>
+                <th>Estimated Time</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td>First build (no cache)</td>
+                <td>20-40 minutes</td>
+                <td>Downloads all dependencies, compiles Python packages, builds Node.js assets</td>
+            </tr>
+            <tr>
+                <td>Rebuild (with cache)</td>
+                <td>5-15 minutes</td>
+                <td>Reuses cached layers, only rebuilds changed components</td>
+            </tr>
+            <tr>
+                <td>Multi-platform build</td>
+                <td>30-60 minutes</td>
+                <td>Building for multiple architectures (amd64 + arm64)</td>
+            </tr>
+        </table>
+
+        <div class="info">
+            <strong>💡 Pro Tip:</strong> Run the build in a screen or tmux session so it continues if your SSH connection drops.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Common Build Issues and Solutions</h2>
+
+        <h3>Issue 1: "exec format error" on Pod Start</h3>
+        <div class="warning">
+            <strong>Symptom:</strong> Pods crash with "exec format error" in logs
+            <br><strong>Cause:</strong> Image was not built for ARM64 architecture
+            <br><strong>Solution:</strong> Rebuild using <code>docker buildx</code> with <code>--platform linux/arm64</code>
+        </div>
+
+        <h3>Issue 2: Build Fails with "failed to solve with frontend dockerfile.v0"</h3>
+        <div class="warning">
+            <strong>Cause:</strong> Buildx builder not properly initialized
+            <br><strong>Solution:</strong>
+            <pre><code>docker buildx rm arm64-builder
+docker buildx create --name arm64-builder --driver docker-container --bootstrap --use</code></pre>
+        </div>
+
+        <h3>Issue 3: "No space left on device" during build</h3>
+        <div class="warning">
+            <strong>Cause:</strong> Docker using too much disk space
+            <br><strong>Solution:</strong>
+            <pre><code># Clean up Docker system
+docker system prune -a --volumes
+
+# Check disk space
+df -h</code></pre>
+        </div>
+
+        <h3>Issue 4: Push to Docker Hub fails with authentication error</h3>
+        <div class="warning">
+            <strong>Solution:</strong>
+            <pre><code># Login to Docker Hub
+docker login
+
+# Enter your Docker Hub username and password</code></pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Verification Steps</h2>
+        <p>After building, verify everything is correct before proceeding:</p>
+
+        <h3>1. Check Image Exists in Registry</h3>
+        <pre><code># List your images on Docker Hub (via web browser)
+https://hub.docker.com/r/harrismajeed/erpnext-custom/tags</code></pre>
+
+        <h3>2. Verify Architecture</h3>
+        <pre><code>docker buildx imagetools inspect harrismajeed/erpnext-custom:develop</code></pre>
+
+        <p><strong>Look for:</strong></p>
+        <pre><code>MediaType: application/vnd.docker.distribution.manifest.v2+json
+Platform:  linux/arm64</code></pre>
+
+        <h3>3. Test Pull on ARM64 Node</h3>
+        <pre><code># SSH to your ARM64 Kubernetes node
+ssh opc@<node-ip>
+
+# Try pulling the image
+sudo docker pull harrismajeed/erpnext-custom:develop
+
+# Verify it works
+sudo docker run --rm harrismajeed/erpnext-custom:develop uname -m
+# Should output: aarch64</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>Step 1: NFS Setup in Kubernetes</h2>
+        <p class="command-description">ERPNext requires shared storage for files and assets across multiple pods. We'll use NFS (Network File System) with an in-cluster NFS server provisioner.</p>
+
+        <div class="info">
+            <strong>ℹ️ Why NFS?</strong>
+            <p>NFS provides ReadWriteMany (RWX) persistent volumes, allowing multiple pods to read and write to the same storage simultaneously. This is essential for ERPNext's file uploads, attachments, and static assets.</p>
+        </div>
+
+        <h3>Step 1.1: Create NFS Namespace</h3>
+        <pre><code># Create a dedicated namespace for NFS provisioner
+kubectl create namespace nfs</code></pre>
+
+        <h3>Step 1.2: Add NFS Helm Repository</h3>
+        <pre><code># Add the official NFS provisioner Helm chart repository
+helm repo add nfs-ganesha-server-and-external-provisioner https://kubernetes-sigs.github.io/nfs-ganesha-server-and-external-provisioner
+
+# Update Helm repositories
+helm repo update</code></pre>
+
+        <h3>Step 1.3: Install NFS Server Provisioner</h3>
+        <pre><code># Install NFS server with persistence enabled
+helm upgrade --install -n nfs in-cluster \
+  nfs-ganesha-server-and-external-provisioner/nfs-server-provisioner \
+  --set 'storageClass.mountOptions={vers=4.1}' \
+  --set persistence.enabled=true \
+  --set persistence.size=8Gi</code></pre>
+
+        <div class="success">
+            <strong>✅ Configuration Explained:</strong>
+            <ul>
+                <li><code>-n nfs</code> - Install in the nfs namespace</li>
+                <li><code>in-cluster</code> - Release name for the deployment</li>
+                <li><code>storageClass.mountOptions={vers=4.1}</code> - Use NFS version 4.1 for better performance</li>
+                <li><code>persistence.enabled=true</code> - Enable persistent storage for NFS server itself</li>
+                <li><code>persistence.size=8Gi</code> - Allocate 8GB for NFS server storage (adjust based on needs)</li>
+            </ul>
+        </div>
+
+        <h3>Step 1.4: Wait for NFS Pods to be Ready</h3>
+        <pre><code># List pods and watch their status
+kubectl get pods -n nfs -w
+
+# Press Ctrl+C to exit watch mode once all pods are Running</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>NAME                                      READY   STATUS    RESTARTS   AGE
+in-cluster-nfs-server-provisioner-0       1/1     Running   0          2m</code></pre>
+
+        <h3>Step 1.5: Verify NFS StorageClass</h3>
+        <pre><code># Check that NFS storage class was created
+kubectl get storageclass
+
+# Look for 'nfs' in the output</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>NAME            PROVISIONER                                             AGE
+nfs             cluster.local/in-cluster-nfs-server-provisioner         2m
+oci-bv          oracle.com/oci                                          1h</code></pre>
+
+        <div class="info">
+            <strong>💡 Storage Size Considerations:</strong>
+            <ul>
+                <li><strong>8Gi</strong> - Suitable for testing/small deployments</li>
+                <li><strong>20Gi</strong> - Recommended for small production (5-10 users)</li>
+                <li><strong>50Gi+</strong> - Recommended for larger deployments</li>
+            </ul>
+            <p>You can always increase size later by upgrading the Helm release with a larger <code>persistence.size</code> value.</p>
+        </div>
+
+        <h3>Troubleshooting NFS Setup</h3>
+
+        <h4>Issue: Pod Stuck in Pending State</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> NFS pod shows status "Pending"
+            <br><strong>Check:</strong>
+            <pre><code>kubectl describe pod -n nfs in-cluster-nfs-server-provisioner-0</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>Insufficient resources in cluster</li>
+                <li>No available nodes</li>
+                <li>Storage class not available</li>
+            </ul>
+        </div>
+
+        <h4>Issue: Pod CrashLoopBackOff</h4>
+        <div class="warning">
+            <strong>Check logs:</strong>
+            <pre><code>kubectl logs -n nfs in-cluster-nfs-server-provisioner-0</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>Permissions issues</li>
+                <li>Port conflicts</li>
+                <li>Storage mount failures</li>
+            </ul>
+        </div>
+
+        <h3>Next: Proceed to ERPNext Installation</h3>
+        <p>Once NFS is running successfully, you can proceed with installing ERPNext using Helm.</p>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Galera Cluster Setup</h2>
+        <p class="command-description">MariaDB Galera Cluster provides high-availability database with multi-master replication for ERPNext. We'll deploy a 3-node cluster for redundancy and automatic failover.</p>
+
+        <div class="info">
+            <strong>ℹ️ Why Galera Cluster?</strong>
+            <p>Galera Cluster offers:</p>
+            <ul>
+                <li><strong>High Availability</strong> - Multiple database nodes eliminate single point of failure</li>
+                <li><strong>Multi-Master Replication</strong> - All nodes can accept writes</li>
+                <li><strong>Automatic Node Provisioning</strong> - New nodes sync automatically</li>
+                <li><strong>Data Consistency</strong> - Synchronous replication ensures no data loss</li>
+            </ul>
+        </div>
+
+        <h3>Step 2.1: Create Database Namespace</h3>
+        <pre><code># Create a dedicated namespace for database
+kubectl create namespace db</code></pre>
+
+        <h3>Step 2.2: Create Galera Configuration File</h3>
+        <pre><code># Create the values file
+touch galera-values.yaml
+
+# Edit with your preferred editor
+nano galera-values.yaml</code></pre>
+
+        <p><strong>Sample galera-values.yaml configuration:</strong></p>
+        <pre><code># Basic Configuration
+replicaCount: 3  # 3-node cluster for high availability
+
+# Persistence Configuration
+persistence:
+  enabled: true
+  size: 10Gi            # Adjust based on data needs (50Gi+ for production)
+  storageClass: oci-bv  # OCI Block Volume (RWO)
+
+# Resource Limits
+resources:
+  requests:
+    cpu: "300m"
+    memory: "1500Mi"
+  limits:
+    cpu: "2"
+    memory: "2500Mi"
+
+# Root Password (CHANGE THIS!)
+rootUser:
+  password: "your-secure-root-password"
+
+# Galera Configuration
+galera:
+  mariabackup:
+    password: "your-secure-backup-password"
+
+# Database Configuration
+db:
+  name: erpnext
+  user: erpnext
+  password: "your-secure-erpnext-password"</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ Security Warning:</strong>
+            <p>Always use strong, unique passwords for production deployments. Consider using Kubernetes Secrets instead of storing passwords in values.yaml:</p>
+            <pre><code># Create secret for passwords
+kubectl create secret generic mariadb-galera-secrets \
+  --from-literal=mariadb-root-password=YOUR_ROOT_PASSWORD \
+  --from-literal=mariadb-password=YOUR_ERPNEXT_PASSWORD \
+  --from-literal=mariadb-galera-mariabackup-password=YOUR_BACKUP_PASSWORD \
+  -n db
+
+# Then reference in values.yaml:
+# existingSecret: mariadb-galera-secrets</code></pre>
+        </div>
+
+        <h3>Step 2.3: Install MariaDB Galera Cluster</h3>
+        <pre><code># Install using Bitnami Helm chart
+helm install mariadb-galera oci://registry-1.docker.io/bitnamicharts/mariadb-galera \
+  -n db \
+  -f galera-values.yaml \
+  --set image.registry=docker.io \
+  --set image.repository=bitnamilegacy/mariadb-galera \
+  --set image.tag=10.6.16</code></pre>
+
+        <div class="success">
+            <strong>✅ Installation Parameters Explained:</strong>
+            <ul>
+                <li><code>mariadb-galera</code> - Release name</li>
+                <li><code>oci://registry-1.docker.io/bitnamicharts/mariadb-galera</code> - Bitnami OCI registry chart</li>
+                <li><code>-n db</code> - Install in db namespace</li>
+                <li><code>-f galera-values.yaml</code> - Use custom configuration file</li>
+                <li><code>--set image.registry=docker.io</code> - Use Docker Hub registry</li>
+                <li><code>--set image.repository=bitnamilegacy/mariadb-galera</code> - ARM64-compatible legacy image</li>
+                <li><code>--set image.tag=10.6.16</code> - Specific MariaDB version for ERPNext compatibility</li>
+            </ul>
+        </div>
+
+        <div class="info">
+            <strong>ℹ️ Why bitnamilegacy image?</strong>
+            <p>The legacy Bitnami images provide better ARM64 support and compatibility with Oracle Cloud A1.Flex instances. The tag 10.6.16 is a stable version compatible with ERPNext.</p>
+        </div>
+
+        <h3>Step 2.4: Wait for Galera Pods to be Ready</h3>
+        <pre><code># Watch pods until all are Running
+kubectl get pods -n db -w
+
+# Press Ctrl+C to exit watch mode once all 3 pods are Running</code></pre>
+
+        <p><strong>Expected output (may take 3-5 minutes):</strong></p>
+        <pre><code>NAME                     READY   STATUS    RESTARTS   AGE
+mariadb-galera-0         1/1     Running   0          5m
+mariadb-galera-1         1/1     Running   0          4m
+mariadb-galera-2         1/1     Running   0          3m</code></pre>
+
+        <h3>Step 2.5: Verify Galera Cluster Status</h3>
+        <pre><code># Check cluster size (should show 3)
+kubectl exec -it mariadb-galera-0 -n db -- mysql -uroot -p$(kubectl get secret --namespace db mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d) -e "SHOW STATUS LIKE 'wsrep_cluster_size';"</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>+--------------------+-------+
+| Variable_name      | Value |
++--------------------+-------+
+| wsrep_cluster_size | 3     |
++--------------------+-------+</code></pre>
+
+        <h3>Step 2.6: Verify Database Creation</h3>
+        <pre><code># Check if erpnext database was created
+kubectl exec -it mariadb-galera-0 -n db -- mysql -uroot -p$(kubectl get secret --namespace db mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d) -e "SHOW DATABASES;"</code></pre>
+
+        <p><strong>Should include 'erpnext' database:</strong></p>
+        <pre><code>+--------------------+
+| Database           |
++--------------------+
+| erpnext            |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+</code></pre>
+
+        <h3>Troubleshooting Galera Cluster</h3>
+
+        <h4>Issue: Pods Stuck in Pending</h4>
+        <div class="warning">
+            <strong>Check events:</strong>
+            <pre><code>kubectl describe pod mariadb-galera-0 -n db</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>Insufficient CPU/Memory resources</li>
+                <li>PVC not bound (check: <code>kubectl get pvc -n db</code>)</li>
+                <li>Storage class not available</li>
+            </ul>
+        </div>
+
+        <h4>Issue: Pods CrashLoopBackOff</h4>
+        <div class="warning">
+            <strong>Check logs:</strong>
+            <pre><code>kubectl logs mariadb-galera-0 -n db --tail=100</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>Incorrect password configuration</li>
+                <li>Port conflicts</li>
+                <li>Corrupted data volume (delete PVC and reinstall)</li>
+            </ul>
+        </div>
+
+        <h4>Issue: Cluster Size Shows 1 Instead of 3</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> wsrep_cluster_size = 1
+            <br><strong>Cause:</strong> Nodes failed to join cluster
+            <br><strong>Check:</strong>
+            <pre><code># Check each pod's cluster status
+kubectl exec -it mariadb-galera-1 -n db -- mysql -uroot -pYOUR_PASSWORD -e "SHOW STATUS LIKE 'wsrep_%';"
+kubectl exec -it mariadb-galera-2 -n db -- mysql -uroot -pYOUR_PASSWORD -e "SHOW STATUS LIKE 'wsrep_%';"</code></pre>
+            <strong>Solution:</strong> May need to restart pods or check network connectivity
+        </div>
+
+        <h3>Galera Cluster Health Monitoring</h3>
+        <pre><code># Quick health check script
+kubectl exec -it mariadb-galera-0 -n db -- mysql -uroot -p$(kubectl get secret --namespace db mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d) -e "
+SHOW STATUS LIKE 'wsrep_cluster_size';
+SHOW STATUS LIKE 'wsrep_cluster_status';
+SHOW STATUS LIKE 'wsrep_local_state_comment';
+SHOW STATUS LIKE 'wsrep_ready';"</code></pre>
+
+        <p><strong>Healthy cluster output:</strong></p>
+        <pre><code>wsrep_cluster_size: 3
+wsrep_cluster_status: Primary
+wsrep_local_state_comment: Synced
+wsrep_ready: ON</code></pre>
+
+        <h3>Production Recommendations</h3>
+        <div class="info">
+            <strong>📊 For Production Deployments:</strong>
+            <ul>
+                <li><strong>Storage:</strong> Increase to 50Gi-200Gi per node based on data size</li>
+                <li><strong>Memory:</strong> 2-4Gi per pod for better query performance</li>
+                <li><strong>Backups:</strong> Configure automated backups using mariabackup</li>
+                <li><strong>Monitoring:</strong> Set up Prometheus/Grafana for cluster monitoring</li>
+                <li><strong>Pod Disruption Budget:</strong> Configure PDB to prevent all nodes going down during maintenance</li>
+            </ul>
+        </div>
+
+        <h3>Service Connection Details</h3>
+        <p>ERPNext will connect to the Galera cluster using this service endpoint:</p>
+        <pre><code># Service name (within cluster):
+mariadb-galera.db.svc.cluster.local
+
+# Port: 3306
+# Database: erpnext
+# Username: erpnext (or as configured)
+# Password: (from galera-values.yaml)</code></pre>
+
+        <div class="success">
+            <strong>✅ Galera Cluster is Ready!</strong>
+            <p>You now have a highly-available 3-node MariaDB Galera cluster running. Next, we'll proceed with ERPNext installation.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Install ERPNext</h2>
+        <p class="command-description">Now we'll deploy ERPNext to Kubernetes using the Frappe Helm chart with your custom ARM64 image and custom configuration.</p>
+
+        <div class="info">
+            <strong>ℹ️ Prerequisites Check:</strong>
+            <p>Before proceeding, ensure:</p>
+            <ul>
+                <li>✅ Custom ARM64 image built and pushed to Docker Hub</li>
+                <li>✅ NFS provisioner running in <code>nfs</code> namespace</li>
+                <li>✅ MariaDB Galera cluster running in <code>db</code> namespace</li>
+                <li>✅ You have the ERPNext Helm chart directory (./erpnext)</li>
+                <li>✅ You have created custom_values.yaml configuration file</li>
+            </ul>
+        </div>
+
+        <h3>Step 3.1: Create ERPNext Namespace</h3>
+        <pre><code># Create dedicated namespace for ERPNext application
+kubectl create namespace erpnext</code></pre>
+
+        <h3>Step 3.2: Prepare custom_values.yaml</h3>
+        <p class="command-description">Create a custom_values.yaml file with your specific configuration. This file overrides default Helm chart values.</p>
+
+        <p><strong>Key configurations to include in custom_values.yaml:</strong></p>
+        <pre><code># Image Configuration - Use your custom ARM64 image
+image:
+  repository: harrismajeed/erpnext-custom
+  tag: develop
+  pullPolicy: Always
+
+# Database Configuration - Connect to Galera cluster
+mariadb:
+  enabled: false  # We're using external Galera cluster
+
+dbHost: "mariadb-galera.db.svc.cluster.local"
+dbPort: 3306
+dbRootUser: "root"
+dbRootPassword: "your-galera-root-password"
+
+# Redis Configuration
+redis:
+  enabled: true
+  architecture: standalone
+
+# Persistence - Use NFS for shared storage
+persistence:
+  worker:
+    enabled: true
+    storageClass: nfs
+    size: 8Gi
+
+# Resources - Adjust based on your cluster capacity
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "3Gi"
+
+# Ingress - We'll configure this separately
+ingress:
+  enabled: false  # We'll use our existing ingress from M1</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ Important Configuration Notes:</strong>
+            <ul>
+                <li><strong>Image:</strong> Must point to your custom ARM64 image</li>
+                <li><strong>dbHost:</strong> Must match your Galera service name</li>
+                <li><strong>Passwords:</strong> Must match what you set in galera-values.yaml</li>
+                <li><strong>storageClass:</strong> Must be "nfs" to use the NFS provisioner</li>
+            </ul>
+        </div>
+
+        <h3>Step 3.3: Install ERPNext Using Helm</h3>
+        <pre><code># Install ERPNext with custom configuration
+helm install frappe-bench ./erpnext \
+  -n erpnext \
+  -f custom_values.yaml</code></pre>
+
+        <div class="success">
+            <strong>✅ Installation Parameters Explained:</strong>
+            <ul>
+                <li><code>frappe-bench</code> - Release name for your ERPNext deployment</li>
+                <li><code>./erpnext</code> - Path to local Helm chart directory</li>
+                <li><code>-n erpnext</code> - Install in erpnext namespace</li>
+                <li><code>-f custom_values.yaml</code> - Use your custom configuration</li>
+            </ul>
+        </div>
+
+        <p><strong>Expected installation output:</strong></p>
+        <pre><code>NAME: frappe-bench
+LAST DEPLOYED: Thu Oct 23 01:00:00 2025
+NAMESPACE: erpnext
+STATUS: deployed
+REVISION: 1
+NOTES:
+...
+Your ERPNext instance is being deployed!</code></pre>
+
+        <h3>Step 3.4: Monitor Pod Deployment</h3>
+        <pre><code># Watch pods as they start up
+kubectl get pods -n erpnext -w
+
+# Press Ctrl+C to exit watch mode once all pods are Running</code></pre>
+
+        <p><strong>Typical pods you'll see:</strong></p>
+        <pre><code>NAME                                    READY   STATUS    RESTARTS   AGE
+frappe-bench-erpnext-worker-0           1/1     Running   0          5m
+frappe-bench-erpnext-worker-1           1/1     Running   0          5m
+frappe-bench-erpnext-web-0              1/1     Running   0          5m
+frappe-bench-redis-master-0             1/1     Running   0          5m
+frappe-bench-socketio-0                 1/1     Running   0          5m
+frappe-bench-scheduler-0                1/1     Running   0          5m</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Pod Roles Explained:</strong>
+            <ul>
+                <li><strong>erpnext-worker</strong> - Background job workers (multiple replicas)</li>
+                <li><strong>erpnext-web</strong> - Web server serving the application</li>
+                <li><strong>redis-master</strong> - Cache and queue backend</li>
+                <li><strong>socketio</strong> - Real-time communication server</li>
+                <li><strong>scheduler</strong> - Scheduled job execution</li>
+            </ul>
+        </div>
+
+        <h3>Step 3.5: Check Installation Status</h3>
+        <pre><code># Get all resources in erpnext namespace
+kubectl get all -n erpnext
+
+# Check persistent volume claims
+kubectl get pvc -n erpnext
+
+# Check services
+kubectl get svc -n erpnext</code></pre>
+
+        <h3>Step 3.6: View ERPNext Logs</h3>
+        <pre><code># Check web pod logs
+kubectl logs -n erpnext frappe-bench-erpnext-web-0 --tail=50
+
+# Check worker logs
+kubectl logs -n erpnext frappe-bench-erpnext-worker-0 --tail=50
+
+# Follow logs in real-time
+kubectl logs -n erpnext frappe-bench-erpnext-web-0 -f</code></pre>
+
+        <h3>Step 3.7: Verify Database Connection</h3>
+        <pre><code># Exec into web pod and check database
+kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- bench mariadb
+
+# Inside MariaDB shell:
+# SHOW DATABASES;
+# USE erpnext;
+# SHOW TABLES;
+# EXIT;</code></pre>
+
+        <h3>Troubleshooting ERPNext Installation</h3>
+
+        <h4>Issue: Pods Stuck in ImagePullBackOff</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> Pods show ImagePullBackOff status
+            <br><strong>Check:</strong>
+            <pre><code>kubectl describe pod frappe-bench-erpnext-web-0 -n erpnext</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>Image name/tag incorrect in custom_values.yaml</li>
+                <li>Image not pushed to Docker Hub</li>
+                <li>Private registry credentials missing</li>
+                <li>Wrong architecture (must be ARM64)</li>
+            </ul>
+            <strong>Solution:</strong>
+            <pre><code># Verify image exists and is ARM64
+docker buildx imagetools inspect harrismajeed/erpnext-custom:develop
+
+# Update values and upgrade
+helm upgrade frappe-bench ./erpnext -n erpnext -f custom_values.yaml</code></pre>
+        </div>
+
+        <h4>Issue: Pods Stuck in CrashLoopBackOff</h4>
+        <div class="warning">
+            <strong>Check logs for errors:</strong>
+            <pre><code>kubectl logs frappe-bench-erpnext-web-0 -n erpnext --previous</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li><strong>Database connection failed</strong> - Check dbHost, dbPort, passwords</li>
+                <li><strong>Missing dependencies</strong> - Ensure image built correctly</li>
+                <li><strong>Permission issues</strong> - Check PVC mounts</li>
+                <li><strong>Configuration errors</strong> - Review custom_values.yaml</li>
+            </ul>
+        </div>
+
+        <h4>Issue: exec format error in Logs</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> Log shows "exec format error" or "cannot execute binary"
+            <br><strong>Cause:</strong> Image architecture mismatch (x86 image on ARM64 nodes)
+            <br><strong>Solution:</strong> Rebuild image with correct ARM64 platform:
+            <pre><code>docker buildx build --platform linux/arm64 ... --push</code></pre>
+        </div>
+
+        <h4>Issue: PVC Pending</h4>
+        <div class="warning">
+            <strong>Check PVC status:</strong>
+            <pre><code>kubectl get pvc -n erpnext
+kubectl describe pvc FRAPPE-BENCH-PVC-NAME -n erpnext</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>NFS provisioner not running</li>
+                <li>Storage class "nfs" not found</li>
+                <li>Insufficient storage capacity</li>
+            </ul>
+            <strong>Verify NFS:</strong>
+            <pre><code>kubectl get pods -n nfs
+kubectl get storageclass</code></pre>
+        </div>
+
+        <h4>Issue: Database Connection Errors</h4>
+        <div class="warning">
+            <strong>Error message:</strong> "Can't connect to MySQL server"
+            <br><strong>Check:</strong>
+            <ol>
+                <li>Galera cluster is running: <code>kubectl get pods -n db</code></li>
+                <li>Service exists: <code>kubectl get svc -n db</code></li>
+                <li>Connection details in custom_values.yaml are correct</li>
+                <li>Passwords match Galera configuration</li>
+            </ol>
+            <strong>Test connection from ERPNext pod:</strong>
+            <pre><code>kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- /bin/bash
+# Inside pod:
+mysql -h mariadb-galera.db.svc.cluster.local -u root -p
+# Enter password from galera-values.yaml</code></pre>
+        </div>
+
+        <h3>Initial Site Creation (If Needed)</h3>
+        <p class="command-description">If the Helm chart doesn't automatically create a site, you may need to create it manually:</p>
+
+        <h4>Method 1: Using Helm Template and Kubernetes Job (Recommended)</h4>
+        <p>This method uses the built-in job template from the Helm chart to create a site in a controlled, declarative way:</p>
+        
+        <pre><code># Generate the create-site job YAML from Helm template
+helm template frappe-bench -n erpnext ./erpnext \
+  -f erpnext/custom_values_create_site.yaml \
+  -s templates/job-create-site.yaml > create-new-site-job.yaml
+
+# Apply the job to create the site
+kubectl apply -f create-new-site-job.yaml</code></pre>
+
+        <div class="success">
+            <strong>✅ Helm Template Method Benefits:</strong>
+            <ul>
+                <li>Uses official chart templates for site creation</li>
+                <li>Declarative - can be version controlled</li>
+                <li>Automatic cleanup with Kubernetes Jobs</li>
+                <li>Configuration from custom_values_create_site.yaml</li>
+                <li>Repeatable and consistent</li>
+            </ul>
+        </div>
+
+        <p><strong>Sample custom_values_create_site.yaml configuration:</strong></p>
+        <pre><code># Site Creation Configuration
+jobs:
+  createSite:
+    enabled: true
+    siteName: "tmg.quickzpro.com"
+    adminPassword: "your-admin-password"
+    installApps:
+      - "erpnext"
+    dbType: "mariadb"
+    dbHost: "mariadb-galera.db.svc.cluster.local"
+    dbPort: 3306
+    dbRootPassword: "your-galera-root-password"
+
+# Image Configuration
+image:
+  repository: harrismajeed/erpnext-custom
+  tag: develop
+  pullPolicy: Always</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ What Happens:</strong>
+            <ol>
+                <li><code>helm template</code> generates a Kubernetes Job manifest from the chart template</li>
+                <li>The Job creates a pod that runs <code>bench new-site</code> command</li>
+                <li>Site is created with specified configuration</li>
+                <li>Job completes and pod remains for log inspection</li>
+                <li>Job can be deleted after verification</li>
+            </ol>
+        </div>
+
+        <h4>Monitor Site Creation Job</h4>
+        <pre><code># Watch the job progress
+kubectl get jobs -n erpnext -w
+
+# Check pod status
+kubectl get pods -n erpnext | grep create-site
+
+# View job logs
+kubectl logs -n erpnext job/frappe-bench-create-site
+
+# Or find the pod name and check logs
+kubectl logs -n erpnext $(kubectl get pods -n erpnext -l job-name=frappe-bench-create-site -o jsonpath='{.items[0].metadata.name}')</code></pre>
+
+        <p><strong>Expected successful output in logs:</strong></p>
+        <pre><code>Installing frappe...
+Installing erpnext...
+Updating Dashboard for erpnext
+*** Scheduler is disabled ***
+Created site tmg.quickzpro.com</code></pre>
+
+        <h4>Verify Site Creation</h4>
+        <pre><code># List all sites
+kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- bench --site all list-apps
+
+# Check site status
+kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- bench --site tmg.quickzpro.com show-config</code></pre>
+
+        <h4>Clean Up Job After Success</h4>
+        <pre><code># Delete the completed job (optional)
+kubectl delete -f create-new-site-job.yaml
+
+# Or delete by job name
+kubectl delete job frappe-bench-create-site -n erpnext</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ Troubleshooting Site Creation Job:</strong>
+            <p><strong>Job fails with database connection error:</strong></p>
+            <ul>
+                <li>Verify Galera cluster is running: <code>kubectl get pods -n db</code></li>
+                <li>Check dbHost and dbRootPassword in custom_values_create_site.yaml</li>
+                <li>Test connection from a pod manually</li>
+            </ul>
+            <p><strong>Job fails with "Site already exists":</strong></p>
+            <ul>
+                <li>Site was already created - this is OK</li>
+                <li>To recreate, first drop the site (see Method 2)</li>
+            </ul>
+            <p><strong>Job pod stays in ImagePullBackOff:</strong></p>
+            <ul>
+                <li>Check image name and tag in custom_values_create_site.yaml</li>
+                <li>Ensure ARM64 image is available</li>
+            </ul>
+        </div>
+
+        <h4>Method 2: Manual Site Creation (Alternative)</h4>
+        <p>If you prefer manual control or the job method doesn't work:</p>
+        
+        <pre><code># Exec into web pod
+kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- /bin/bash
+
+# Inside pod - create new site
+bench new-site tmg.quickzpro.com \
+  --mariadb-root-password YOUR_GALERA_ROOT_PASSWORD \
+  --admin-password YOUR_ADMIN_PASSWORD \
+  --install-app erpnext
+
+# Set as default site
+bench use tmg.quickzpro.com
+
+# Exit pod
+exit</code></pre>
+
+        <div class="info">
+            <strong>💡 Which Method to Use?</strong>
+            <ul>
+                <li><strong>Method 1 (Helm Template Job)</strong> - Recommended for production, repeatable, can be automated</li>
+                <li><strong>Method 2 (Manual)</strong> - Good for development, troubleshooting, or one-time setups</li>
+            </ul>
+        </div>
+
+        <h3>Access ERPNext Service</h3>
+        <pre><code># Get service details
+kubectl get svc -n erpnext
+
+# Port forward for testing (optional)
+kubectl port-forward -n erpnext svc/frappe-bench-erpnext 8000:8000
+
+# Access at: http://localhost:8000</code></pre>
+
+        <div class="info">
+            <strong>💡 Note:</strong> Port forwarding is only for testing. For production access, we'll configure Ingress in the next step to use your domain with HTTPS.
+        </div>
+
+        <h3>Verify ERPNext is Working</h3>
+        <ol>
+            <li>Check all pods are Running: <code>kubectl get pods -n erpnext</code></li>
+            <li>Check services are created: <code>kubectl get svc -n erpnext</code></li>
+            <li>Check PVCs are Bound: <code>kubectl get pvc -n erpnext</code></li>
+            <li>Test database connection from pod</li>
+            <li>Verify web interface accessible via port-forward</li>
+        </ol>
+
+        <div class="success">
+            <strong>✅ ERPNext Installed Successfully!</strong>
+            <p>Your ERPNext application is now running in Kubernetes. Next, we'll configure Ingress to make it accessible via your domain with HTTPS.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Step 4: Clean Up Test Nginx Resources</h2>
+        <p class="command-description">Before configuring ERPNext ingress, we need to remove the test nginx deployment, service, and ingress from Milestone 1 to avoid conflicts.</p>
+
+        <div class="warning">
+            <strong>⚠️ Why Delete Old Resources?</strong>
+            <p>The old nginx ingress and ERPNext ingress would both handle <code>tmg.quickzpro.com/</code> which creates a conflict:</p>
+            <ul>
+                <li>Both use same host: <code>tmg.quickzpro.com</code></li>
+                <li>Both use same path: <code>/</code></li>
+                <li>Ingress controller can't determine which to use</li>
+                <li>Results in unpredictable routing behavior</li>
+            </ul>
+            <p><strong>Solution:</strong> Delete test nginx resources before applying ERPNext ingress.</p>
+        </div>
+
+        <h3>Step 4.1: Delete Old Nginx Ingress</h3>
+        <pre><code># Delete the test ingress
+kubectl delete ingress nginx-ingress -n default</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>ingress.networking.k8s.io "nginx-ingress" deleted</code></pre>
+
+        <h3>Step 4.2: Delete Nginx Deployment</h3>
+        <pre><code># Delete the nginx deployment
+kubectl delete deployment nginx-deployment -n default</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>deployment.apps "nginx-deployment" deleted</code></pre>
+
+        <h3>Step 4.3: Delete Nginx Service</h3>
+        <pre><code># Delete the nginx service (LoadBalancer)
+kubectl delete service nginx-deployment -n default</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>service "nginx-deployment" deleted</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ What Happens:</strong>
+            <ul>
+                <li>The nginx pods will be terminated</li>
+                <li>The LoadBalancer (139.185.57.33) will be released</li>
+                <li>The ingress rule for nginx will be removed</li>
+                <li>Your domain will temporarily show no backend (404)</li>
+                <li>Once ERPNext ingress is applied, domain will route to ERPNext</li>
+            </ul>
+        </div>
+
+        <h3>Step 4.4: Verify Cleanup</h3>
+        <pre><code># Verify ingress is deleted
+kubectl get ingress -n default
+
+# Verify deployment is deleted
+kubectl get deployment -n default
+
+# Verify service is deleted
+kubectl get service -n default
+
+# Should show no nginx resources</code></pre>
+
+        <h3>Step 4.5: Check Ingress Controller</h3>
+        <pre><code># Verify ingress-nginx controller is still running
+kubectl get pods -n ingress-nginx
+
+# Check ingress controller service (should still have external IP)
+kubectl get svc -n ingress-nginx ingress-nginx-controller</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>NAME                       TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)
+ingress-nginx-controller   LoadBalancer   10.96.164.28   139.185.59.14   80:30894/TCP,443:31487/TCP</code></pre>
+
+        <div class="success">
+            <strong>✅ Important:</strong> The ingress-nginx-controller service and its external IP (139.185.59.14) remain unchanged. Your DNS still points to this IP, which is correct. Only the routing rules changed.
+        </div>
+
+        <h3>What About the TLS Certificate?</h3>
+        <p>The old certificate (<code>tmg-quickzpro-tls</code>) in the <code>default</code> namespace will remain but won't be used. ERPNext will get its own certificate (<code>erpnext-tls-cert</code>) in the <code>erpnext</code> namespace.</p>
+
+        <h4>Optional: Clean Up Old Certificate Secret</h4>
+        <pre><code># Optional - delete old certificate secret
+kubectl delete secret tmg-quickzpro-tls -n default
+
+# Optional - delete old certificate resource
+kubectl delete certificate tmg-quickzpro-tls -n default</code></pre>
+
+        <div class="info">
+            <strong>💡 Note:</strong> Deleting the old certificate is optional. It won't cause conflicts since certificates are namespace-scoped. However, cleaning it up keeps things tidy.
+        </div>
+
+        <div class="success">
+            <strong>✅ Cleanup Complete!</strong>
+            <p>Test nginx resources removed. Ready to configure ERPNext ingress in the next step.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Step 5: Configure ERPNext Ingress</h2>
+        <p class="command-description">Now we'll create and apply the Ingress resource to route traffic from your domain to ERPNext with HTTPS.</p>
+
+        <h3>Step 5.1: Create ERPNext Ingress Configuration</h3>
+        <p>Create a file called <code>ipbased-erpaccess-ingress.yaml</code> in the <code>erpnext/</code> directory:</p>
+
+        <pre><code>apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ipbased-erpaccess-ingress
+  namespace: erpnext
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/upstream-vhost: "erp.localtest.me"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "tmg.quickzpro.com"
+    secretName: erpnext-tls-cert
+  rules:
+  - host: "tmg.quickzpro.com"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frappe-bench-erpnext
+            port:
+              number: 8080</code></pre>
+
+        <div class="success">
+            <strong>✅ Key Configuration Explained:</strong>
+            <ul>
+                <li><strong>namespace: erpnext</strong> - Ingress in same namespace as ERPNext service</li>
+                <li><strong>cert-manager.io/cluster-issuer</strong> - Uses existing Let's Encrypt ClusterIssuer</li>
+                <li><strong>upstream-vhost: "erp.localtest.me"</strong> - ⚠️ CRITICAL: Must match your site name created with <code>bench new-site</code></li>
+                <li><strong>ssl-redirect: "true"</strong> - Forces HTTPS redirection</li>
+                <li><strong>secretName: erpnext-tls-cert</strong> - Cert-manager will create this in erpnext namespace</li>
+                <li><strong>service name: frappe-bench-erpnext</strong> - Must match your ERPNext service name</li>
+                <li><strong>port: 8080</strong> - Frappe's default web port</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important: upstream-vhost Must Match Site Name!</strong>
+            <p>The value <code>erp.localtest.me</code> must match the site name you created with ERPNext. If you created a site with a different name (e.g., <code>tmg.quickzpro.com</code>), update this annotation accordingly:</p>
+            <pre><code>nginx.ingress.kubernetes.io/upstream-vhost: "tmg.quickzpro.com"</code></pre>
+            <p><strong>To check your site name:</strong></p>
+            <pre><code>kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- bench --site all list-apps</code></pre>
+        </div>
+
+        <h3>Step 5.2: Verify Service Name and Port</h3>
+        <p>Before applying, confirm your ERPNext service details:</p>
+        <pre><code># Check ERPNext service name and ports
+kubectl get svc -n erpnext
+
+# Look for a service with port 8080</code></pre>
+
+        <p><strong>Expected output (service name may vary based on your Helm release name):</strong></p>
+        <pre><code>NAME                      TYPE        CLUSTER-IP      PORT(S)
+frappe-bench-erpnext      ClusterIP   10.96.xxx.xxx   8080/TCP
+frappe-bench-socketio     ClusterIP   10.96.xxx.xxx   9000/TCP
+frappe-bench-redis        ClusterIP   10.96.xxx.xxx   6379/TCP</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Service Name Adjustment:</strong>
+            <p>If your service has a different name (check output above), update the ingress YAML:</p>
+            <pre><code>backend:
+  service:
+    name: YOUR-ACTUAL-SERVICE-NAME  # Replace with actual name
+    port:
+      number: 8080</code></pre>
+        </div>
+
+        <h3>Step 5.3: Apply ERPNext Ingress</h3>
+        <pre><code># Apply the ingress configuration
+kubectl apply -f erpnext/ipbased-erpaccess-ingress.yaml</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>ingress.networking.k8s.io/ipbased-erpaccess-ingress created</code></pre>
+
+        <h3>Step 5.4: Verify Ingress Creation</h3>
+        <pre><code># Check ingress status
+kubectl get ingress -n erpnext
+
+# Describe ingress for details
+kubectl describe ingress ipbased-erpaccess-ingress -n erpnext</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>NAME                         CLASS   HOSTS                 ADDRESS         PORTS
+ipbased-erpaccess-ingress    nginx   tmg.quickzpro.com     139.185.59.14   80, 443</code></pre>
+
+        <h3>Step 5.5: Wait for Certificate Issuance</h3>
+        <pre><code># Watch certificate creation
+kubectl get certificate -n erpnext -w
+
+# Check certificate status
+kubectl describe certificate erpnext-tls-cert -n erpnext</code></pre>
+
+        <p><strong>Certificate progression:</strong></p>
+        <pre><code># Initially:
+NAME               READY   SECRET              AGE
+erpnext-tls-cert   False   erpnext-tls-cert    10s
+
+# After 1-2 minutes:
+NAME               READY   SECRET              AGE
+erpnext-tls-cert   True    erpnext-tls-cert    2m</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Certificate Process:</strong>
+            <ol>
+                <li>Cert-manager sees the ingress annotation</li>
+                <li>Creates a Certificate resource automatically</li>
+                <li>Requests certificate from Let's Encrypt</li>
+                <li>Performs HTTP-01 challenge via ingress</li>
+                <li>Stores certificate in <code>erpnext-tls-cert</code> secret</li>
+                <li>Usually takes 1-3 minutes</li>
+            </ol>
+        </div>
+
+        <h3>Step 5.6: Check Ingress Controller Logs (If Issues)</h3>
+        <pre><code># Check for any routing errors
+kubectl logs -n ingress-nginx deployment/ingress-nginx-controller --tail=50
+
+# Look for errors related to your ingress
+kubectl logs -n ingress-nginx deployment/ingress-nginx-controller | grep erpnext</code></pre>
+
+        <h3>Troubleshooting Ingress Issues</h3>
+
+        <h4>Issue: Certificate Stuck in False State</h4>
+        <div class="warning">
+            <strong>Check certificate request:</strong>
+            <pre><code>kubectl get certificaterequest -n erpnext
+kubectl describe certificaterequest -n erpnext</code></pre>
+            <strong>Common causes:</strong>
+            <ul>
+                <li>DNS not pointing to ingress IP (139.185.59.14)</li>
+                <li>Firewall blocking port 80 (needed for HTTP-01 challenge)</li>
+                <li>Ingress controller not routing correctly</li>
+            </ul>
+            <strong>Verify DNS:</strong>
+            <pre><code>nslookup tmg.quickzpro.com
+# Should return 139.185.59.14</code></pre>
+        </div>
+
+        <h4>Issue: 404 or 502 Error When Accessing Domain</h4>
+        <div class="warning">
+            <strong>502 Bad Gateway - Backend not responding:</strong>
+            <pre><code># Check if ERPNext pods are running
+kubectl get pods -n erpnext
+
+# Check ERPNext web pod logs
+kubectl logs -n erpnext frappe-bench-erpnext-web-0 --tail=50
+
+# Test service directly
+kubectl port-forward -n erpnext svc/frappe-bench-erpnext 8080:8080
+# Access: http://localhost:8080</code></pre>
+            
+            <strong>404 Not Found - Wrong backend or path:</strong>
+            <ul>
+                <li>Verify service name in ingress matches actual service</li>
+                <li>Check service port (should be 8080)</li>
+                <li>Verify ingress is in correct namespace (erpnext)</li>
+            </ul>
+        </div>
+
+        <h4>Issue: "Site not found" Error from ERPNext</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> ERPNext shows "Site not found" error page
+            <br><strong>Cause:</strong> <code>upstream-vhost</code> doesn't match created site name
+            <br><strong>Solution:</strong>
+            <ol>
+                <li>Check your site name:
+                    <pre><code>kubectl exec -it frappe-bench-erpnext-web-0 -n erpnext -- ls /home/frappe/frappe-bench/sites/</code></pre>
+                </li>
+                <li>Update ingress annotation to match site name</li>
+                <li>Re-apply ingress: <code>kubectl apply -f erpnext/ipbased-erpaccess-ingress.yaml</code></li>
+            </ol>
+        </div>
+
+        <h4>Issue: HTTPS Redirects to HTTP</h4>
+        <div class="warning">
+            <strong>Cause:</strong> SSL redirect annotations not working
+            <br><strong>Solution:</strong> Already configured in the ingress with:
+            <pre><code>nginx.ingress.kubernetes.io/ssl-redirect: "true"
+nginx.ingress.kubernetes.io/force-ssl-redirect: "true"</code></pre>
+            <p>If still having issues, check ingress-nginx version compatibility.</p>
+        </div>
+
+        <h3>Step 5.7: Access ERPNext via HTTPS</h3>
+        <p>Once certificate is ready (READY=True), access your ERPNext instance:</p>
+        <pre><code>https://tmg.quickzpro.com</code></pre>
+
+        <div class="success">
+            <strong>✅ What You Should See:</strong>
+            <ul>
+                <li>🔒 Padlock icon in browser (valid HTTPS)</li>
+                <li>ERPNext login page</li>
+                <li>Or ERPNext setup wizard (if first-time access)</li>
+                <li>No certificate warnings</li>
+                <li>No "Site not found" errors</li>
+            </ul>
+        </div>
+
+        <h3>Default ERPNext Credentials</h3>
+        <p>If you created the site with the Helm job or manually, use:</p>
+        <pre><code>Username: Administrator
+Password: [The admin password you set during site creation]</code></pre>
+
+        <div class="info">
+            <strong>💡 First Time Setup:</strong>
+            <p>If this is your first time accessing ERPNext, you'll see the Setup Wizard. Follow these steps:</p>
+            <ol>
+                <li>Select your language and country</li>
+                <li>Set up your company details</li>
+                <li>Configure your domain (e.g., Manufacturing, Services, Retail)</li>
+                <li>Add users (optional, can do later)</li>
+                <li>Complete the wizard</li>
+            </ol>
+        </div>
+
+        <div class="success">
+            <strong>🎉 ERPNext is Live with HTTPS!</strong>
+            <p>Your ERPNext installation is now accessible via your domain with a valid SSL certificate. You can proceed with configuring ERPNext for your business needs.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Step 6: Build Assets and Clear Cache</h2>
+        <p class="command-description">After installation or when you make changes to ERPNext, you may need to rebuild assets and clear cache to see the updates.</p>
+
+        <div class="info">
+            <strong>ℹ️ When to Build Assets:</strong>
+            <ul>
+                <li>After fresh installation</li>
+                <li>After installing new apps</li>
+                <li>After customizing forms or scripts</li>
+                <li>When frontend changes aren't appearing</li>
+                <li>After updating ERPNext version</li>
+            </ul>
+        </div>
+
+        <h3>Step 6.1: Identify Your Pod Names</h3>
+        <pre><code># Get nginx pod name
+kubectl get pods -n erpnext | grep nginx
+
+# Get gunicorn pod name
+kubectl get pods -n erpnext | grep gunicorn</code></pre>
+
+        <p><strong>Example output:</strong></p>
+        <pre><code>frappe-bench-erpnext-nginx-b8ff7d696-9nbkf             1/1     Running
+frappe-bench-erpnext-gunicorn-75f7cfcd9b-wtxl4         1/1     Running</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ Note About Pod Names:</strong>
+            <p>Pod names include random suffixes (e.g., <code>-9nbkf</code>, <code>-wtxl4</code>). Your pod names will be different. Always check the actual pod names before running commands.</p>
+        </div>
+
+        <h3>Step 6.2: Build ERPNext Assets in Nginx Pod</h3>
+        <p class="command-description">The nginx pod serves static assets, so we build them here:</p>
+
+        <h4>Method 1: Direct Command Execution</h4>
+        <pre><code># Build ERPNext assets in nginx pod (replace pod name with yours)
+kubectl exec -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bench build --app erpnext</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>✔ Application Assets Linked
+✔ Frappe UI Assets Built
+✔ ERPNext Assets Built
+✔ JS & CSS Cache Cleared</code></pre>
+
+        <h4>Method 2: Interactive Shell</h4>
+        <pre><code># Exec into nginx pod interactively
+kubectl exec -it -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bash
+
+# Inside the pod, run:
+bench build --app erpnext
+
+# Exit when done
+exit</code></pre>
+
+        <div class="success">
+            <strong>✅ Build Process Explained:</strong>
+            <ul>
+                <li><code>bench build</code> - Compiles JavaScript and CSS assets</li>
+                <li><code>--app erpnext</code> - Build only ERPNext app (faster than building all apps)</li>
+                <li>Assets are bundled, minified, and optimized</li>
+                <li>Takes 1-3 minutes depending on cluster resources</li>
+            </ul>
+        </div>
+
+        <h3>Step 6.3: Clear Cache in All Pods</h3>
+        <p class="command-description">After building or making changes, clear the cache to ensure updates are visible:</p>
+
+        <h4>Clear Cache in Gunicorn Pod</h4>
+        <pre><code># Clear cache for all sites in gunicorn pod
+kubectl exec -n erpnext frappe-bench-erpnext-gunicorn-75f7cfcd9b-wtxl4 -- bench --site all clear-cache</code></pre>
+
+        <h4>Clear Cache in Nginx Pod</h4>
+        <pre><code># Clear cache for all sites in nginx pod
+kubectl exec -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bench --site all clear-cache</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>Clearing cache for site: tmg.quickzpro.com
+✔ Cache cleared</code></pre>
+
+        <div class="info">
+            <strong>ℹ️ Why Clear Cache in Both Pods?</strong>
+            <p>Different pods cache different things:</p>
+            <ul>
+                <li><strong>Gunicorn pod</strong> - Caches Python code, database queries, and Redis data</li>
+                <li><strong>Nginx pod</strong> - Caches static assets and frontend data</li>
+                <li>Clearing both ensures complete cache refresh</li>
+            </ul>
+        </div>
+
+        <h3>Step 6.4: Force Build All Apps</h3>
+        <p class="command-description">Use this when you need to completely rebuild all assets (takes longer):</p>
+
+        <h4>Build All Apps in Gunicorn Pod</h4>
+        <pre><code># Force rebuild all apps in gunicorn pod
+kubectl exec -n erpnext frappe-bench-erpnext-gunicorn-75f7cfcd9b-wtxl4 -- bench build --force</code></pre>
+
+        <h4>Build All Apps in Nginx Pod</h4>
+        <pre><code># Force rebuild all apps in nginx pod
+kubectl exec -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bench build --force</code></pre>
+
+        <p><strong>Expected output:</strong></p>
+        <pre><code>✔ Building frappe
+✔ Building erpnext
+✔ Building hrms
+✔ All Assets Built Successfully</code></pre>
+
+        <div class="warning">
+            <strong>⚠️ --force Flag:</strong>
+            <p>The <code>--force</code> flag:</p>
+            <ul>
+                <li>Rebuilds ALL assets from scratch (ignores cache)</li>
+                <li>Takes longer than regular build (3-5 minutes)</li>
+                <li>Use when regular build doesn't fix issues</li>
+                <li>Useful after major updates or when assets are corrupted</li>
+            </ul>
+        </div>
+
+        <h3>Step 6.5: Restart Pods (If Needed)</h3>
+        <p class="command-description">Sometimes a pod restart is needed to fully apply changes:</p>
+
+        <pre><code># Restart nginx deployment
+kubectl rollout restart deployment frappe-bench-erpnext-nginx -n erpnext
+
+# Restart gunicorn deployment
+kubectl rollout restart deployment frappe-bench-erpnext-gunicorn -n erpnext
+
+# Watch rollout status
+kubectl rollout status deployment frappe-bench-erpnext-nginx -n erpnext
+kubectl rollout status deployment frappe-bench-erpnext-gunicorn -n erpnext</code></pre>
+
+        <div class="info">
+            <strong>💡 When to Restart Pods:</strong>
+            <ul>
+                <li>After major configuration changes</li>
+                <li>When cache clearing doesn't work</li>
+                <li>After updating environment variables</li>
+                <li>When pods show strange behavior</li>
+            </ul>
+        </div>
+
+        <h3>Complete Refresh Workflow</h3>
+        <p>For a complete refresh after making changes, run these in order:</p>
+
+        <pre><code># 1. Clear cache in all pods
+kubectl exec -n erpnext frappe-bench-erpnext-gunicorn-75f7cfcd9b-wtxl4 -- bench --site all clear-cache
+kubectl exec -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bench --site all clear-cache
+
+# 2. Build assets
+kubectl exec -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bench build --app erpnext
+
+# 3. Restart deployments
+kubectl rollout restart deployment frappe-bench-erpnext-nginx -n erpnext
+kubectl rollout restart deployment frappe-bench-erpnext-gunicorn -n erpnext
+
+# 4. Wait for pods to be ready
+kubectl wait --for=condition=ready pod -l app=erpnext-nginx -n erpnext --timeout=120s
+kubectl wait --for=condition=ready pod -l app=erpnext-gunicorn -n erpnext --timeout=120s
+
+# 5. Test your changes
+curl -I https://tmg.quickzpro.com</code></pre>
+
+        <h3>Troubleshooting Build Issues</h3>
+
+        <h4>Issue: Build Command Hangs or Times Out</h4>
+        <div class="warning">
+            <strong>Symptom:</strong> <code>bench build</code> command doesn't complete
+            <br><strong>Common causes:</strong>
+            <ul>
+                <li>Insufficient pod resources (CPU/Memory)</li>
+                <li>Node.js out of memory</li>
+                <li>Corrupted node_modules</li>
+            </ul>
+            <strong>Solution:</strong>
+            <pre><code># Check pod resource usage
+kubectl top pod -n erpnext
+
+# Increase pod memory limits in values.yaml if needed
+# Then upgrade helm release:
+helm upgrade frappe-bench ./erpnext -n erpnext -f custom_values.yaml</code></pre>
+        </div>
+
+        <h4>Issue: "No module named 'frappe'" Error</h4>
+        <div class="warning">
+            <strong>Cause:</strong> Frappe framework not properly installed
+            <br><strong>Solution:</strong>
+            <pre><code># Reinstall frappe in the pod
+kubectl exec -it -n erpnext frappe-bench-erpnext-nginx-b8ff7d696-9nbkf -- bash
+cd /home/frappe/frappe-bench
+bench get-app frappe
+exit</code></pre>
+        </div>
+
+        <h4>Issue: Assets Not Updating After Build</h4>
+        <div class="warning">
+            <strong>Solutions to try:</strong>
+            <ol>
+                <li>Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)</li>
+                <li>Clear Redis cache: <code>kubectl exec -n erpnext frappe-bench-redis-master-0 -- redis-cli FLUSHALL</code></li>
+                <li>Force rebuild: <code>bench build --force</code></li>
+                <li>Restart all pods</li>
+            </ol>
+        </div>
+
+        <div class="success">
+            <strong>✅ Assets Built and Cache Cleared!</strong>
+            <p>Your ERPNext installation now has fresh assets and cleared cache. All changes should be visible when you access the application.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Next Steps</h2>
+        <p>Progress so far:</p>
+        <ol>
+            <li>✅ Custom ARM64 image built and pushed to Docker Hub</li>
+            <li>✅ NFS provisioner installed and running</li>
+            <li>✅ MariaDB Galera cluster (3 nodes) running</li>
+            <li>✅ ERPNext installed and running</li>
+            <li>➡️ Configure Ingress for ERPNext (update from nginx to ERPNext)</li>
+            <li>➡️ Access ERPNext via https://tmg.quickzpro.com</li>
+            <li>➡️ Complete ERPNext setup wizard</li>
+            <li>➡️ Configure backups and monitoring</li>
+        </ol>
+
+        <div class="success">
+            <strong>🎉 Almost There!</strong>
+            <p>ERPNext is installed and running. The final step is to update your Ingress to route traffic from your domain to ERPNext instead of the test nginx deployment.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>ERPNext Installation Guide - Part 1: Custom Docker Image Build</strong></p>
+        <p>Continue documenting additional commands as you proceed with the installation.</p>
+        <p>Generated: October 23, 2025</p>
+    </div>
+
+</body>
+</html>
